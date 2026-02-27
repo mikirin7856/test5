@@ -3,94 +3,83 @@ use teloxide::types::{KeyboardButton, KeyboardMarkup};
 use crate::{
     bot::PurchaseKind,
     i18n::{
-        btn_buy_3m, btn_buy_all, btn_buy_old, btn_cancel, Lang, BTN_LANG_BACK, BTN_LANG_EN,
-        BTN_LANG_RU,
+        BTN_LANG_BACK, BTN_LANG_EN, BTN_LANG_RU, Lang, btn_buy_3m, btn_buy_all, btn_buy_old,
+        btn_cancel,
     },
     queue::SearchKind,
 };
 
-fn kb(text: &str) -> KeyboardButton {
-    KeyboardButton::new(text)
-}
-
 pub fn language_keyboard() -> KeyboardMarkup {
-    KeyboardMarkup::new(vec![vec![kb(BTN_LANG_EN), kb(BTN_LANG_RU)]])
-        .resize_keyboard(true)
-        .one_time_keyboard(false)
+    KeyboardMarkup::new(vec![
+        vec![KeyboardButton::new(BTN_LANG_EN)],
+        vec![KeyboardButton::new(BTN_LANG_RU)],
+    ])
+    .resize_keyboard(true)
 }
 
 pub fn main_keyboard(lang: Lang) -> KeyboardMarkup {
     KeyboardMarkup::new(vec![
-        vec![kb(btn_search_domain(lang)), kb(btn_search_port(lang))],
-        vec![kb(btn_search_subdomain(lang)), kb(btn_search_path(lang))],
-        vec![kb(btn_search_login(lang))],
-        vec![kb(BTN_LANG_BACK)],
+        vec![KeyboardButton::new(btn_search_domain(lang))],
+        vec![KeyboardButton::new(btn_search_port(lang))],
+        vec![KeyboardButton::new(btn_search_subdomain(lang))],
+        vec![KeyboardButton::new(btn_search_path(lang))],
+        vec![KeyboardButton::new(btn_search_login(lang))],
+        vec![KeyboardButton::new(BTN_LANG_BACK)],
     ])
     .resize_keyboard(true)
-    .one_time_keyboard(false)
 }
 
 pub fn input_keyboard(lang: Lang) -> KeyboardMarkup {
-    KeyboardMarkup::new(vec![vec![kb(btn_cancel(lang))]])
-        .resize_keyboard(true)
-        .one_time_keyboard(false)
+    KeyboardMarkup::new(vec![vec![KeyboardButton::new(btn_cancel(lang))]]).resize_keyboard(true)
 }
 
 pub fn amount_keyboard(lang: Lang) -> KeyboardMarkup {
-    KeyboardMarkup::new(vec![vec![kb(btn_cancel(lang))]])
-        .resize_keyboard(true)
-        .one_time_keyboard(false)
+    KeyboardMarkup::new(vec![vec![KeyboardButton::new(btn_cancel(lang))]]).resize_keyboard(true)
 }
 
 pub fn buy_keyboard(lang: Lang, kind: PurchaseKind) -> KeyboardMarkup {
-    let mut actions: Vec<KeyboardButton> = Vec::new();
+    let mut rows: Vec<Vec<KeyboardButton>> = Vec::new();
 
     match kind {
-        PurchaseKind::All => actions.push(kb(btn_buy_all(lang))),
+        PurchaseKind::All => rows.push(vec![KeyboardButton::new(btn_buy_all(lang))]),
         _ => {
-            actions.push(kb(btn_buy_3m(lang)));
-            actions.push(kb(btn_buy_old(lang)));
+            rows.push(vec![KeyboardButton::new(btn_buy_3m(lang))]);
+            rows.push(vec![KeyboardButton::new(btn_buy_old(lang))]);
         }
     }
 
-    let mut rows: Vec<Vec<KeyboardButton>> =
-        actions.chunks(2).map(|chunk| chunk.to_vec()).collect();
-
-    rows.push(vec![kb(btn_cancel(lang))]);
-
-    KeyboardMarkup::new(rows)
-        .resize_keyboard(true)
-        .one_time_keyboard(false)
+    rows.push(vec![KeyboardButton::new(btn_cancel(lang))]);
+    KeyboardMarkup::new(rows).resize_keyboard(true)
 }
 
 pub fn btn_search_domain(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "🔍 Search by domain",
-        Lang::Ru => "🔍 Поиск по домену",
+        Lang::En => "Search by domain",
+        Lang::Ru => "Поиск по домену",
     }
 }
 pub fn btn_search_port(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "🔌 Search by port",
-        Lang::Ru => "🔌 Поиск по порту",
+        Lang::En => "Search by port",
+        Lang::Ru => "Поиск по порту",
     }
 }
 pub fn btn_search_subdomain(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "🌐 Search by subdomain",
-        Lang::Ru => "🌐 Поиск по subdomain",
+        Lang::En => "Search by subdomain",
+        Lang::Ru => "Поиск по subdomain",
     }
 }
 pub fn btn_search_path(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "📁 Search by path",
-        Lang::Ru => "📁 Поиск по пути path",
+        Lang::En => "Search by path",
+        Lang::Ru => "Поиск по пути path",
     }
 }
 pub fn btn_search_login(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "✉️ Search by login/email",
-        Lang::Ru => "✉️ Поиск по login/email",
+        Lang::En => "Search by login/email",
+        Lang::Ru => "Поиск по login/email",
     }
 }
 
@@ -100,27 +89,22 @@ pub fn purchase_action_keyboard(
     cnt_new: usize,
     cnt_old: usize,
 ) -> KeyboardMarkup {
-    let mut actions: Vec<KeyboardButton> = Vec::new();
+    let mut rows: Vec<Vec<KeyboardButton>> = Vec::new();
 
     if matches!(kind, SearchKind::Login) {
         if cnt_new > 0 {
-            actions.push(kb(btn_buy_all(lang)));
+            rows.push(vec![KeyboardButton::new(btn_buy_all(lang))]);
         }
     } else {
         if cnt_new > 0 {
-            actions.push(kb(btn_buy_3m(lang)));
+            rows.push(vec![KeyboardButton::new(btn_buy_3m(lang))]);
         }
         if cnt_old > 0 {
-            actions.push(kb(btn_buy_old(lang)));
+            rows.push(vec![KeyboardButton::new(btn_buy_old(lang))]);
         }
     }
 
-    let mut rows: Vec<Vec<KeyboardButton>> =
-        actions.chunks(2).map(|chunk| chunk.to_vec()).collect();
+    rows.push(vec![KeyboardButton::new(btn_cancel(lang))]);
 
-    rows.push(vec![kb(btn_cancel(lang))]);
-
-    KeyboardMarkup::new(rows)
-        .resize_keyboard(true)
-        .one_time_keyboard(false)
+    KeyboardMarkup::new(rows).resize_keyboard(true)
 }

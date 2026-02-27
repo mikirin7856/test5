@@ -10,19 +10,23 @@ use crate::{
 };
 
 pub fn language_keyboard() -> KeyboardMarkup {
-    KeyboardMarkup::new(vec![
-        vec![KeyboardButton::new(BTN_LANG_EN)],
-        vec![KeyboardButton::new(BTN_LANG_RU)],
-    ])
+    KeyboardMarkup::new(vec![vec![
+        KeyboardButton::new(BTN_LANG_EN),
+        KeyboardButton::new(BTN_LANG_RU),
+    ]])
     .resize_keyboard(true)
 }
 
 pub fn main_keyboard(lang: Lang) -> KeyboardMarkup {
     KeyboardMarkup::new(vec![
-        vec![KeyboardButton::new(btn_search_domain(lang))],
-        vec![KeyboardButton::new(btn_search_port(lang))],
-        vec![KeyboardButton::new(btn_search_subdomain(lang))],
-        vec![KeyboardButton::new(btn_search_path(lang))],
+        vec![
+            KeyboardButton::new(btn_search_domain(lang)),
+            KeyboardButton::new(btn_search_port(lang)),
+        ],
+        vec![
+            KeyboardButton::new(btn_search_subdomain(lang)),
+            KeyboardButton::new(btn_search_path(lang)),
+        ],
         vec![KeyboardButton::new(btn_search_login(lang))],
         vec![KeyboardButton::new(BTN_LANG_BACK)],
     ])
@@ -43,8 +47,10 @@ pub fn buy_keyboard(lang: Lang, kind: PurchaseKind) -> KeyboardMarkup {
     match kind {
         PurchaseKind::All => rows.push(vec![KeyboardButton::new(btn_buy_all(lang))]),
         _ => {
-            rows.push(vec![KeyboardButton::new(btn_buy_3m(lang))]);
-            rows.push(vec![KeyboardButton::new(btn_buy_old(lang))]);
+            rows.push(vec![
+                KeyboardButton::new(btn_buy_3m(lang)),
+                KeyboardButton::new(btn_buy_old(lang)),
+            ]);
         }
     }
 
@@ -54,32 +60,32 @@ pub fn buy_keyboard(lang: Lang, kind: PurchaseKind) -> KeyboardMarkup {
 
 pub fn btn_search_domain(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "Search by domain",
-        Lang::Ru => "Поиск по домену",
+        Lang::En => "🔍 Search by domain",
+        Lang::Ru => "🔍 Поиск по домену",
     }
 }
 pub fn btn_search_port(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "Search by port",
-        Lang::Ru => "Поиск по порту",
+        Lang::En => "🔌 Search by port",
+        Lang::Ru => "🔌 Поиск по порту",
     }
 }
 pub fn btn_search_subdomain(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "Search by subdomain",
-        Lang::Ru => "Поиск по subdomain",
+        Lang::En => "🌐 Search by subdomain",
+        Lang::Ru => "🌐 Поиск по subdomain",
     }
 }
 pub fn btn_search_path(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "Search by path",
-        Lang::Ru => "Поиск по пути path",
+        Lang::En => "📁 Search by path",
+        Lang::Ru => "📁 Поиск по пути path",
     }
 }
 pub fn btn_search_login(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "Search by login/email",
-        Lang::Ru => "Поиск по login/email",
+        Lang::En => "✉️ Search by login/email",
+        Lang::Ru => "✉️ Поиск по login/email",
     }
 }
 
@@ -96,11 +102,17 @@ pub fn purchase_action_keyboard(
             rows.push(vec![KeyboardButton::new(btn_buy_all(lang))]);
         }
     } else {
+        let mut buy_row: Vec<KeyboardButton> = Vec::new();
+
         if cnt_new > 0 {
-            rows.push(vec![KeyboardButton::new(btn_buy_3m(lang))]);
+            buy_row.push(KeyboardButton::new(btn_buy_3m(lang)));
         }
         if cnt_old > 0 {
-            rows.push(vec![KeyboardButton::new(btn_buy_old(lang))]);
+            buy_row.push(KeyboardButton::new(btn_buy_old(lang)));
+        }
+
+        if !buy_row.is_empty() {
+            rows.push(buy_row);
         }
     }
 

@@ -52,10 +52,6 @@ pub fn buy_keyboard(lang: Lang, kind: PurchaseKind) -> KeyboardMarkup {
 
     match kind {
         PurchaseKind::All => rows.push(vec![KeyboardButton::new(btn_buy_all(lang))]),
-        _ => rows.push(vec![
-            KeyboardButton::new(btn_buy_3m(lang)),
-            KeyboardButton::new(btn_buy_old(lang)),
-        ]),
     }
 
     rows.push(vec![KeyboardButton::new(btn_cancel(lang))]);
@@ -109,17 +105,7 @@ pub fn purchase_action_keyboard(
             rows.push(vec![KeyboardButton::new(btn_buy_all(lang))]);
         }
     } else {
-        let mut purchase_row: Vec<KeyboardButton> = Vec::new();
 
-        if cnt_new > 0 {
-            purchase_row.push(KeyboardButton::new(btn_buy_3m(lang)));
-        }
-        if cnt_old > 0 {
-            purchase_row.push(KeyboardButton::new(btn_buy_old(lang)));
-        }
-
-        if !purchase_row.is_empty() {
-            rows.push(purchase_row);
         }
     }
 

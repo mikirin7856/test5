@@ -7,7 +7,7 @@ use reqwest::Client;
 use std::{collections::HashSet, sync::Arc};
 use teloxide::{
     prelude::*,
-    types::{InputFile, ParseMode},
+    types::ParseMode,
 };
 use tokio::{
     fs::OpenOptions,
@@ -77,21 +77,22 @@ fn t_lines(lang: Lang) -> &'static str {
     }
 }
 
-fn t_last3m(lang: Lang) -> &'static str {
+// Функции возвращают только текст без форматирования
+fn t_last3m_label(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "Last 3 Month",
-        Lang::Ru => "Last 3 Month",
+        Lang::En => "New lines",
+        Lang::Ru => "Новые строки",
     }
 }
 
-fn t_old(lang: Lang) -> &'static str {
+fn t_old_label(lang: Lang) -> &'static str {
     match lang {
-        Lang::En => "Old",
-        Lang::Ru => "Old",
+        Lang::En => "Old lines",
+        Lang::Ru => "Старые строки",
     }
 }
 
-fn t_total(lang: Lang) -> &'static str {
+fn t_total_label(lang: Lang) -> &'static str {
     match lang {
         Lang::En => "Total",
         Lang::Ru => "Total",
@@ -173,11 +174,11 @@ async fn handle_task(deps: &WorkerDeps, task: &DbTask) -> Result<()> {
                 format_kind(&task.kind),
                 sanitize(&task.query)
             );
-            let f_old = format!(
+            let f_old = format![
                 "Notes/{}_{}_old.txt",
                 format_kind(&task.kind),
                 sanitize(&task.query)
-            );
+            ];
             (f_new, f_old)
         }
     };
@@ -313,57 +314,77 @@ async fn handle_task(deps: &WorkerDeps, task: &DbTask) -> Result<()> {
         return Ok(());
     }
 
-    // Preview file
-    let preview_path = format!(
-        "Notes/preview_{}_{}_{}.txt",
-        format_kind(&task.kind),
-        sanitize(&task.query),
-        task.user_id
+    // ИСПРАВЛЕНО: Формирование таблицы с фиксированными размерами колонок и пробелами вокруг даты
+    // Колонка 1: 14 символов (текст влево)
+    // Колонка 2: 27 символов (25 дата + пробелы по бокам)
+    // Колонка 3: 12 символов (текст вправо)
+    
+    // Форматируем числа с выравниванием вправо (12 символов)
+    let cnt_new_str = format!("{:>12}", cnt_new);
+    let cnt_old_str = format!("{:>12}", cnt_old);
+    let total_str = format!("{:>12}", total);
+    
+    // Формируем даты с пробелами по бокам
+    let start_3m = (today - chrono::Duration::days(90)).format("%d_%b_%Y");
+    let end_3m = today.format("%d_%b_%Y");
+    let date_range_3m = format!(" {} → {} ", start_3m, end_3m); // Пробелы в начале и конце
+    // Убеждаемся что дата с пробелами занимает ровно 27 символов
+    let date_range_3m = format!("{:^27}", date_range_3m);
+    
+    let start_old = NaiveDate::from_ymd_opt(2018, 6, 1).unwrap();
+    let date_range_old = format!(" {} → {} ", start_old.format("%d_%b_%Y"), end_3m); // Пробелы в начале и конце
+    let date_range_old = format!("{:^27}", date_range_old);
+    
+    // Получаем локализованные метки
+    let new_lines_label = t_last3m_label(lang);
+    let old_lines_label = t_old_label(lang);
+    let total_label = t_total_label(lang);
+    
+    // Формируем заголовок с фиксированными размерами
+    let header = format!(
+        "{:<14}|{:^27}|{:>12}",
+        "CATEGORY",
+        " DATE RANGE ",
+        "LINES"
     );
-    let mut pf = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .truncate(true)
-        .open(&preview_path)
-        .await?;
+    
+    // Разделитель (14 + 1 + 27 + 1 + 12 = 55 символов)
+    let separator = "-".repeat(55);
+    
+    // Формируем строки данных с фиксированными размерами
+    let new_lines_row = format!(
+        "{:<14}|{}|{}",
+        new_lines_label,
+        date_range_3m,
+        cnt_new_str
+    );
+    
+    let old_lines_row = format!(
+        "{:<14}|{}|{}",
+        old_lines_label,
+        date_range_old,
+        cnt_old_str
+    );
+    
+    // Формируем итоговую строку (Total с пустым центром)
+    let total_row = format!(
+        "{:<14}|{:^27}|{}",
+        total_label,
+        "",
+        total_str
+    );
 
-    for entry in &preview_entries {
-        pf.write_all(entry.as_bytes()).await?;
-    }
-    pf.flush().await?;
-
-    deps.bot
-        .send_document(task.chat_id, InputFile::file(preview_path))
-        .await?;
-
-    // REPORT (локализуем заголовки, но формат оставим HTML)
-    let report = if matches!(task.kind, SearchKind::Login) {
-        format!(
-            "<pre><b>📊 {report_date}:</b> {today}\n<b>{query}:</b> {kind} = {q}\n\n{lines}: {t}</pre>",
-            report_date = t_report_date(lang),
-            today = today_str,
-            query = t_query(lang),
-            kind = kind_label(lang, &task.kind),
-            q = html_escape(&task.query),
-            lines = t_lines(lang),
-            t = total
-        )
-    } else {
-        format!(
-            "<pre><b>📊 {report_date}:</b> {today}\n<b>{query}:</b> {kind} = {q}\n\n{last3m}: {n3}\n{old}: {no}\n{total_lbl}: {t}</pre>",
-            report_date = t_report_date(lang),
-            today = today_str,
-            query = t_query(lang),
-            kind = kind_label(lang, &task.kind),
-            q = html_escape(&task.query),
-            last3m = t_last3m(lang),
-            n3 = cnt_new,
-            old = t_old(lang),
-            no = cnt_old,
-            total_lbl = t_total(lang),
-            t = total
-        )
-    };
+    // Собираем весь отчет
+    let report = format!(
+        "<pre>📊 REPORT DATE: {}\n\n{}\n{}\n{}\n{}\n{}\n{}\n</pre>",
+        today_str,
+        header,
+        separator,
+        new_lines_row,
+        old_lines_row,
+        separator,
+        total_row,
+    );
 
     deps.bot
         .send_message(task.chat_id, report)
@@ -386,10 +407,6 @@ async fn handle_task(deps: &WorkerDeps, task: &DbTask) -> Result<()> {
 
     // =========================
     // Клавиатура покупки
-    // Требование: на "всех остальных страницах" (кроме 2й страницы выбора языка/главного меню)
-    // кнопка "Назад / Back (Language)" НЕ должна показываться.
-    // Поэтому здесь оставляем только функциональные кнопки + "Отмена / Назад".
-    // =========================
     deps.user_states
         .insert(task.user_id, UserState::WaitingPurchaseAction);
 
